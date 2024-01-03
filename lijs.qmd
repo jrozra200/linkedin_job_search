@@ -1,0 +1,113 @@
+---
+title: "LinkedIn Job Search"
+format: html
+---
+
+```{r}
+library(dplyr)
+library(rvest)
+library(stringr)
+library(purrr)
+
+round <- 0
+
+job_dat <- data.frame()
+
+while(round <= 5){
+    if(round == 0){
+        url <- "https://www.linkedin.com/jobs/search/?distance=25&f_TPR=r604800&geoId=90000077&keywords=data%20science"
+    } else {
+        start <- as.character(round * 25)
+        url <- paste0("https://www.linkedin.com/jobs/search/?distance=25&f_TPR",
+                      "=r604800&geoId=90000077&keywords=data%20science&start=",
+                      start)
+    }
+    
+    html <- url %>% 
+        read_html() %>% 
+        html_elements("ul")
+    
+    job_urls <- unlist(str_extract_all(
+        as.character(html[7]), 
+        pattern = "href=\"https://www.linkedin.com/jobs/view/.*\\?"))
+    
+    tmp <- data.frame(job_url = job_urls)
+    
+    job_dat <- bind_rows(job_dat, tmp)
+    
+    round <- round + 1
+}
+
+job_dat <- job_dat %>% 
+    mutate(job_url = str_remove(job_url, "href=\""),
+           job_url = str_remove(job_url, "\\?"))
+```
+
+```{python}
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://www.linkedin.com/jobs/view/data-analyst-at-acro-service-corp-3790208248/"
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
+}
+
+# Fetch the content from the URL with headers
+response = requests.get(url, headers=headers)
+webpage = response.content
+
+# Create a BeautifulSoup object and specify the parser
+soup = BeautifulSoup(webpage, 'html.parser')
+
+# Select elements using CSS selector equivalent to your XPath
+# For example, if your XPath is '/html/body/div[2]/div[1]/p[2]',
+# you need to convert it to a CSS selector. This is an example conversion.
+elements = soup.select('div.mt3.mb2')
+
+body > div.application-outlet > div.authentication-outlet > div.scaffold-layout.scaffold-layout--breakpoint-md.scaffold-layout--main-aside.scaffold-layout--reflow.job-view-layout.jobs-details > div > div > main > div > div:nth-child(1) > div > div:nth-child(1) > div > div > div.p5 > div.mt3.mb2 > ul
+```
+
+```{r}
+library(rvest)
+library(httr)
+
+# URL of the webpage to scrape
+url <- "https://www.linkedin.com/jobs/view/data-analyst-at-acro-service-corp-3790208248/"
+
+# Set User-Agent to mimic a Google Chrome browser
+user_agent <- "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+
+# Fetch the content from the URL with custom User-Agent header
+response <- GET(url, user_agent(user_agent))
+webpage <- read_html(response)
+
+job_title <- webpage %>% 
+    html_element("body") %>% 
+    html_elements("div") %>% 
+    pluck(14) %>% 
+    html_element("div") %>% 
+    html_element("div") %>% 
+    html_element("h3") %>% 
+    html_text()
+
+location <- webpage %>% 
+    html_element("body") %>% 
+    html_elements("div") %>% 
+    pluck(14) %>% 
+    html_element("div") %>% 
+    html_element("div") %>% 
+    html_element("div") %>% 
+    html_element("span") %>% 
+    html_text()
+
+tmp <- webpage %>% 
+    html_element("body") %>% 
+    html_elements("div") %>% 
+    pluck(14) %>% 
+    html_text()
+
+tmp[str_detect(tmp, "About the job")]
+
+```
+
