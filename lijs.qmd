@@ -8,6 +8,9 @@ library(dplyr)
 library(rvest)
 library(stringr)
 library(purrr)
+library(httr)
+
+user_agent <- "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
 
 round <- 0
 
@@ -23,8 +26,17 @@ while(round <= 5){
                       start)
     }
     
-    html <- url %>% 
-        read_html() %>% 
+    response_code <- 0
+    
+    while (response_code != 200) {
+        response <- GET(url, user_agent(user_agent))
+        response_code <- response$status_code
+        Sys.sleep(1)
+    }
+    
+    webpage <- read_html(response) 
+    
+    html <- webpage %>% 
         html_elements("ul")
     
     job_urls <- unlist(str_extract_all(
@@ -43,71 +55,57 @@ job_dat <- job_dat %>%
            job_url = str_remove(job_url, "\\?"))
 ```
 
-```{python}
-import requests
-from bs4 import BeautifulSoup
-
-url = "https://www.linkedin.com/jobs/view/data-analyst-at-acro-service-corp-3790208248/"
-
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
-}
-
-# Fetch the content from the URL with headers
-response = requests.get(url, headers=headers)
-webpage = response.content
-
-# Create a BeautifulSoup object and specify the parser
-soup = BeautifulSoup(webpage, 'html.parser')
-
-# Select elements using CSS selector equivalent to your XPath
-# For example, if your XPath is '/html/body/div[2]/div[1]/p[2]',
-# you need to convert it to a CSS selector. This is an example conversion.
-elements = soup.select('div.mt3.mb2')
-
-body > div.application-outlet > div.authentication-outlet > div.scaffold-layout.scaffold-layout--breakpoint-md.scaffold-layout--main-aside.scaffold-layout--reflow.job-view-layout.jobs-details > div > div > main > div > div:nth-child(1) > div > div:nth-child(1) > div > div > div.p5 > div.mt3.mb2 > ul
-```
 
 ```{r}
-library(rvest)
-library(httr)
 
 # URL of the webpage to scrape
-url <- "https://www.linkedin.com/jobs/view/data-analyst-at-acro-service-corp-3790208248/"
-
-# Set User-Agent to mimic a Google Chrome browser
-user_agent <- "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+url <- "https://www.linkedin.com/jobs/view/data-analyst-at-newlane-finance-3792664885/"
 
 # Fetch the content from the URL with custom User-Agent header
 response <- GET(url, user_agent(user_agent))
 webpage <- read_html(response)
 
 job_title <- webpage %>% 
-    html_element("body") %>% 
-    html_elements("div") %>% 
-    pluck(14) %>% 
-    html_element("div") %>% 
-    html_element("div") %>% 
-    html_element("h3") %>% 
+    html_elements("h1") %>% 
     html_text()
 
-location <- webpage %>% 
-    html_element("body") %>% 
-    html_elements("div") %>% 
-    pluck(14) %>% 
-    html_element("div") %>% 
-    html_element("div") %>% 
-    html_element("div") %>% 
-    html_element("span") %>% 
-    html_text()
+webpage %>% 
+    html_nodes(xpath = 'body/div[5]')
 
-tmp <- webpage %>% 
-    html_element("body") %>% 
-    html_elements("div") %>% 
-    pluck(14) %>% 
-    html_text()
 
-tmp[str_detect(tmp, "About the job")]
+```
+
+https://api.airtable.com/v0/apprdsx9uO4l5FieL/Table%201?pageSize=99&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc&filterByFormula=AND(AND(SEARCH(%22data%22%2C%20%7BConcat%7D)%2CSEARCH(%22science%22%2C%20%7BConcat%7D)))
+
+
+```{python}
+import requests
+from bs4 import BeautifulSoup
+
+# URL of the webpage you want to scrape
+url = 'https://www.google.com/search?q=data+science+manager+jobs&ibp=htl;jobs&sa=X&ved=2ahUKEwjauan86MGDAxUGEFkFHZPHA-MQudcGKAF6BAgOECo&sxsrf=AM9HkKkHoF6YS6Cv-HoM6h4C9vQI2zjJtA:1704305560814#htivrt=jobs&htidocid=uR2CLTQAIEw34cPuAAAAAA%3D%3D&fpstate=tldetail'
+
+headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+
+# Send a GET request to the webpage
+response = requests.get(url, headers = headers)
+
+# Check if the request was successful
+if response.status_code == 200:
+    # Parse the content of the request with BeautifulSoup
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # Extract specific information from the page
+    # For example, this will find all <p> (paragraph) tags
+    paragraphs = soup.find_all('li')
+
+    for p in paragraphs:
+        print(p.get_text())
+else:
+    print("Failed to retrieve the webpage")
+
 
 ```
 

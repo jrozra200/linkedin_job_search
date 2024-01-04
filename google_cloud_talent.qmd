@@ -1,0 +1,52 @@
+---
+title: "Google Search"
+format: html
+---
+
+```{python}
+from google.cloud import talent
+import os
+import uuid
+
+# Set the path to your service account key file
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'verdant-wares-111701-f229b02de96f.json'
+
+# Initialize the client
+client = talent.JobServiceClient()
+
+# Define the parent resource. For example, "projects/your-project-id"
+parent = 'projects/verdant-wares-111701'
+
+# Generate a random session ID and user ID for this example
+# In a real application, these should be meaningful values
+session_id = str(uuid.uuid4())
+user_id = str(uuid.uuid4())
+
+# Define your search request
+request = {
+    "parent": parent,
+    "request_metadata": {
+        "domain": "www.jakelearnsdatascience.com",  # Replace with your application's domain
+        "session_id": session_id,         # Replace with the actual session ID
+        "user_id": user_id               # Replace with the actual user ID
+    },
+    "job_query": {
+        "query": "Data Science Manager"
+    }
+}
+
+# Perform the search
+response = client.search_jobs(request=request)
+
+# Iterate over the results and print them
+for job in response.matching_jobs:
+    print(f"Job title: {job.job.title}")
+    print(f"Job description: {job.job.description}")
+    print(f"Job location: {job.job.addresses}")
+    print("-----------------------------------")
+
+response.matching_jobs
+
+response.metadata
+```
+
